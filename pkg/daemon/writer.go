@@ -29,14 +29,16 @@ type NodeStateStatusWriter struct {
 	OnHeartbeatFailure func()
 	metaData           *utils.OSPMetaData
 	networkData        *utils.OSPNetworkData
+	devMode            bool
 }
 
 // NewNodeStateStatusWriter Create a new NodeStateStatusWriter
-func NewNodeStateStatusWriter(c snclientset.Interface, n string, f func()) *NodeStateStatusWriter {
+func NewNodeStateStatusWriter(c snclientset.Interface, n string, f func(), mode bool) *NodeStateStatusWriter {
 	return &NodeStateStatusWriter{
 		client:             c,
 		node:               n,
 		OnHeartbeatFailure: f,
+		devMode:            mode,
 	}
 }
 
@@ -100,7 +102,7 @@ func (writer *NodeStateStatusWriter) pollNicStatus(platformType utils.PlatformTy
 	if platformType == utils.VirtualOpenStack {
 		iface, err = utils.DiscoverSriovDevicesVirtual(platformType, writer.metaData, writer.networkData)
 	} else {
-		iface, err = utils.DiscoverSriovDevices()
+		iface, err = utils.DiscoverSriovDevices(writer.devMode)
 	}
 	if err != nil {
 		return err
