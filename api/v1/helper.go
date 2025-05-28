@@ -22,7 +22,6 @@ import (
 	"fmt"
 	"os"
 	"path/filepath"
-	"reflect"
 	"regexp"
 	"slices"
 	"sort"
@@ -31,6 +30,7 @@ import (
 	"time"
 
 	corev1 "k8s.io/api/core/v1"
+	"k8s.io/apimachinery/pkg/api/equality"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	intstrutil "k8s.io/apimachinery/pkg/util/intstr"
@@ -968,7 +968,7 @@ func GenerateBridgeName(iface *InterfaceExt) string {
 
 // NeedToUpdateBridges returns true if bridge for the host requires update
 func NeedToUpdateBridges(bridgeSpec, bridgeStatus *Bridges) bool {
-	return !reflect.DeepEqual(bridgeSpec, bridgeStatus)
+	return !equality.Semantic.DeepEqual(bridgeSpec, bridgeStatus)
 }
 
 // SetKeepUntilTime sets an annotation to hold the "keep until time" for the node’s state.
