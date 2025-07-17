@@ -33,6 +33,7 @@ import (
 	admission "k8s.io/api/admissionregistration/v1"
 	appsv1 "k8s.io/api/apps/v1"
 	corev1 "k8s.io/api/core/v1"
+	networkv1 "k8s.io/api/networking/v1"
 	rbacv1 "k8s.io/api/rbac/v1"
 	k8serrors "k8s.io/apimachinery/pkg/api/errors"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
@@ -1150,6 +1151,7 @@ var _ = Describe("[sriov] operator", Ordered, func() {
 				assertObjectIsNotFound("network-resources-injector-role-binding", &rbacv1.ClusterRoleBinding{})
 				assertObjectIsNotFound("network-resources-injector-config", &admission.MutatingWebhookConfiguration{})
 				assertObjectIsNotFound("nri-control-switches", &corev1.ConfigMap{})
+				assertObjectIsNotFound("network-resources-injector-allow-traffic-api-server", &networkv1.NetworkPolicy{})
 			})
 
 			It("SR-IOV Operator Config, disable Operator Webhook", func() {
@@ -1170,6 +1172,7 @@ var _ = Describe("[sriov] operator", Ordered, func() {
 				assertObjectIsNotFound("operator-webhook", &rbacv1.ClusterRole{})
 				assertObjectIsNotFound("operator-webhook-role-binding", &rbacv1.ClusterRoleBinding{})
 				assertObjectIsNotFound("sriov-operator-webhook-config", &admission.MutatingWebhookConfiguration{})
+				assertObjectIsNotFound("operator-webhook-allow-traffic-api-server", &networkv1.NetworkPolicy{})
 			})
 
 			It("SR-IOV Operator Config, disable Resource Injector and Operator Webhook", func() {
