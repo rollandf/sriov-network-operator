@@ -96,7 +96,7 @@ var _ = Describe("Drain Controller", Ordered, func() {
 
 		poolConfig := &sriovnetworkv1.SriovNetworkPoolConfig{}
 		poolConfig.SetNamespace(testNamespace)
-		poolConfig.SetName("test-workers")
+		poolConfig.SetName("test-workers123")
 		err := k8sClient.Delete(context.Background(), poolConfig)
 		if err != nil {
 			Expect(errors.IsNotFound(err)).To(BeTrue())

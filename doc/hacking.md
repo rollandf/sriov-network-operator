@@ -2,7 +2,7 @@
 
 The sriov network operator relies on operator-sdk and kubebuilder to scaffold and generate code and manifests. We keeps upgrading sdk version for the operator. Now the operator is compliance with operator-sdk 1.9.0 and go.kubebuilder.io/v3.
 
-## Build and Test
+## Build and Test - labeler test
 
 To run the operator locally, make sure the env variable `KUBECONFIG` is set properly.
 
