@@ -197,7 +197,7 @@ func (dn *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 	}
 
 	// if we are running in systemd mode we want to get the sriov result from the config-daemon that runs in systemd
-	sriovResult, sriovResultExists, err := dn.checkSystemdStatus()
+	sriovResult, sriovResultExists, err := dn.CheckSystemdStatus()
 	//TODO: in the case we need to think what to do if we try to apply again or not
 	if err != nil {
 		reqLogger.Error(err, "failed to check systemd status unexpected error")
@@ -232,7 +232,8 @@ func (dn *NodeReconciler) Reconcile(ctx context.Context, req ctrl.Request) (ctrl
 			}
 			// periodically ensure device plugin is unblocked,
 			// this is required to ensure that device plugin can start in case if it is restarted for some reason
-			if vars.FeatureGate.IsEnabled(consts.BlockDevicePluginUntilConfiguredFeatureGate) {
+			if vars.FeatureGate.IsEnabled(consts.BlockDevicePluginUntilConfiguredFeatureGate) &&
+				len(desiredNodeState.Spec.Interfaces) > 0 {
 				devicePluginPods, err := dn.getDevicePluginPodsForNode(ctx)
 				if err != nil {
 					reqLogger.Error(err, "failed to get device plugin pods")
@@ -337,14 +338,14 @@ func (dn *NodeReconciler) checkOnNodeStateChange(desiredNodeState *sriovnetworkv
 	return reqReboot, reqDrain, nil
 }
 
-// checkSystemdStatus Checks the status of systemd services on the host node.
+// CheckSystemdStatus Checks the status of systemd services on the host node.
 // return the sriovResult struct a boolean if the result file exist on the node
-func (dn *NodeReconciler) checkSystemdStatus() (*hosttypes.SriovResult, bool, error) {
+func (dn *NodeReconciler) CheckSystemdStatus() (*hosttypes.SriovResult, bool, error) {
 	if !vars.UsingSystemdMode {
 		return nil, false, nil
 	}
 
-	funcLog := log.Log.WithName("checkSystemdStatus")
+	funcLog := log.Log.WithName("CheckSystemdStatus")
 	serviceEnabled, err := dn.hostHelpers.IsServiceEnabled(consts.SriovServicePath)
 	if err != nil {
 		funcLog.Error(err, "failed to check if sriov-config service exist on host")
@@ -366,12 +367,12 @@ func (dn *NodeReconciler) checkSystemdStatus() (*hosttypes.SriovResult, bool, er
 
 	// check if the service exist
 	if serviceEnabled && postNetworkServiceEnabled {
-		exist = true
 		sriovResult, err = dn.hostHelpers.ReadSriovResult()
 		if err != nil {
 			funcLog.Error(err, "failed to load sriov result file from host")
 			return nil, false, err
 		}
+		exist = sriovResult != nil
 	}
 	return sriovResult, exist, nil
 }
@@ -426,9 +427,13 @@ func (dn *NodeReconciler) apply(ctx context.Context, desiredNodeState *sriovnetw
 	}
 
 	if vars.FeatureGate.IsEnabled(consts.BlockDevicePluginUntilConfiguredFeatureGate) {
-		if err := dn.waitForDevicePluginPodAndTryUnblock(ctx, desiredNodeState); err != nil {
-			reqLogger.Error(err, "failed to wait for device plugin pod to start and try to unblock it")
-			return ctrl.Result{}, err
+		if len(desiredNodeState.Spec.Interfaces) == 0 {
+			reqLogger.Info("no interfaces in desired state, skipping device plugin wait as device plugin won't be deployed")
+		} else {
+			if err := dn.waitForDevicePluginPodAndTryUnblock(ctx, desiredNodeState); err != nil {
+				reqLogger.Error(err, "failed to wait for device plugin pod to start and try to unblock it")
+				return ctrl.Result{}, err
+			}
 		}
 	} else {
 		// if the feature gate is not enabled we preserver the old behavior
@@ -622,7 +627,6 @@ func (dn *NodeReconciler) getDevicePluginPodsForNode(ctx context.Context) ([]cor
 		return []corev1.Pod{}, err
 	}
 	if len(pods.Items) == 0 {
-		funcLog.Info("no device plugin pods found")
 		return []corev1.Pod{}, nil
 	}
 	return pods.Items, nil
@@ -637,6 +641,10 @@ func (dn *NodeReconciler) restartDevicePluginPod(ctx context.Context) error {
 	devicePluginPods, err := dn.getDevicePluginPodsForNode(ctx)
 	if err != nil {
 		return err
+	}
+	if len(devicePluginPods) == 0 {
+		funcLog.V(2).Info("no device plugin pods found during restart attempt")
+		return nil
 	}
 	for _, pod := range devicePluginPods {
 		podUID := pod.UID
