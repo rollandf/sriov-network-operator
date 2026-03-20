@@ -18,6 +18,7 @@ package daemon_test
 
 import (
 	"context"
+	"fmt"
 	"os"
 	"sync"
 	"time"
@@ -606,6 +607,39 @@ var _ = Describe("Daemon Controller", Ordered, func() {
 			}, waitTime, retryTime).Should(Succeed())
 		})
 
+		It("Should not wait for device plugin pod when there are no interfaces and blockDevicePluginUntilConfigured is enabled", func(ctx context.Context) {
+			DeferCleanup(func(x bool) { vars.DisableDrain = x }, vars.DisableDrain)
+			vars.DisableDrain = true
+
+			By("waiting for drain idle states")
+			EventuallyWithOffset(1, func(g Gomega) {
+				g.Expect(k8sClient.Get(context.Background(), types.NamespacedName{Namespace: nodeState.Namespace, Name: nodeState.Name}, nodeState)).
+					ToNot(HaveOccurred())
+
+				g.Expect(nodeState.Annotations[constants.NodeStateDrainAnnotation]).To(Equal(constants.DrainIdle))
+				g.Expect(nodeState.Annotations[constants.NodeStateDrainAnnotationCurrent]).To(Equal(constants.DrainIdle))
+			}, waitTime, retryTime).Should(Succeed())
+
+			By("setting an empty interfaces spec (no policies)")
+			EventuallyWithOffset(1, func(g Gomega) {
+				err := k8sClient.Get(ctx, types.NamespacedName{Namespace: nodeState.Namespace, Name: nodeState.Name}, nodeState)
+				g.Expect(err).ToNot(HaveOccurred())
+
+				nodeState.Spec.Interfaces = []sriovnetworkv1.Interface{}
+				err = k8sClient.Update(ctx, nodeState)
+				g.Expect(err).ToNot(HaveOccurred())
+			}, waitTime, retryTime).Should(Succeed())
+
+			By("verifying sync status reaches Succeeded without stalling on device plugin wait")
+			eventuallySyncStatusEqual(nodeState, constants.SyncStatusSucceeded)
+
+			By("verifying the device plugin pod still has the wait-for-config annotation (was not unblocked)")
+			devicePluginPod := &corev1.Pod{}
+			Expect(k8sClient.Get(ctx, types.NamespacedName{Name: devicePluginPodName, Namespace: testNamespace},
+				devicePluginPod)).ToNot(HaveOccurred())
+			Expect(devicePluginPod.Annotations).To(HaveKey(constants.DevicePluginWaitConfigAnnotation))
+		})
+
 		It("Should unblock the device plugin pod when configuration is finished", func(ctx context.Context) {
 			DeferCleanup(func(x bool) { vars.DisableDrain = x }, vars.DisableDrain)
 			vars.DisableDrain = true
@@ -668,6 +702,90 @@ var _ = Describe("Daemon Controller", Ordered, func() {
 					devicePluginPod)).ToNot(HaveOccurred())
 				g.Expect(devicePluginPod.Annotations).ToNot(HaveKey(constants.DevicePluginWaitConfigAnnotation))
 			}, waitTime, retryTime).Should(Succeed())
+		})
+	})
+})
+
+var _ = Describe("Daemon CheckSystemdStatus", func() {
+	var (
+		myMockCtrl   *gomock.Controller
+		myHostHelper *mock_helper.MockHostHelpersInterface
+		reconciler   *daemon.NodeReconciler
+	)
+
+	BeforeEach(func() {
+		myMockCtrl = gomock.NewController(GinkgoT())
+		myHostHelper = mock_helper.NewMockHostHelpersInterface(myMockCtrl)
+		reconciler = daemon.New(nil, myHostHelper, nil, nil, nil)
+
+		originalUsingSystemdMode := vars.UsingSystemdMode
+		vars.UsingSystemdMode = true
+		DeferCleanup(func() {
+			vars.UsingSystemdMode = originalUsingSystemdMode
+		})
+	})
+
+	Context("when systemd services are enabled", func() {
+		BeforeEach(func() {
+			myHostHelper.EXPECT().IsServiceEnabled(constants.SriovServicePath).Return(true, nil)
+			myHostHelper.EXPECT().IsServiceEnabled(constants.SriovPostNetworkServicePath).Return(true, nil)
+		})
+
+		It("should return exist=true if sriov result file exists", func() {
+			myHostHelper.EXPECT().ReadSriovResult().Return(&hostTypes.SriovResult{}, nil)
+			result, exist, err := reconciler.CheckSystemdStatus()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeTrue())
+			Expect(result).ToNot(BeNil())
+		})
+
+		It("should return exist=false if sriov result file does not exist", func() {
+			myHostHelper.EXPECT().ReadSriovResult().Return(nil, nil)
+			result, exist, err := reconciler.CheckSystemdStatus()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeFalse())
+			Expect(result).To(BeNil())
+		})
+
+		It("should return error if ReadSriovResult fails", func() {
+			myHostHelper.EXPECT().ReadSriovResult().Return(nil, fmt.Errorf("read error"))
+			result, exist, err := reconciler.CheckSystemdStatus()
+			Expect(err).To(HaveOccurred())
+			Expect(exist).To(BeFalse())
+			Expect(result).To(BeNil())
+		})
+	})
+
+	Context("when systemd services are NOT enabled", func() {
+		It("should return exist=false if first service is disabled", func() {
+			myHostHelper.EXPECT().IsServiceEnabled(constants.SriovServicePath).Return(false, nil)
+			myHostHelper.EXPECT().IsServiceEnabled(constants.SriovPostNetworkServicePath).Return(true, nil)
+			result, exist, err := reconciler.CheckSystemdStatus()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeFalse())
+			Expect(result.SyncStatus).To(Equal(constants.SyncStatusFailed))
+		})
+
+		It("should return exist=false if second service is disabled", func() {
+			myHostHelper.EXPECT().IsServiceEnabled(constants.SriovServicePath).Return(true, nil)
+			myHostHelper.EXPECT().IsServiceEnabled(constants.SriovPostNetworkServicePath).Return(false, nil)
+			result, exist, err := reconciler.CheckSystemdStatus()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeFalse())
+			Expect(result.SyncStatus).To(Equal(constants.SyncStatusFailed))
+		})
+	})
+
+	Context("when not in systemd mode", func() {
+		BeforeEach(func() {
+			vars.UsingSystemdMode = false
+		})
+
+		It("should return exist=false and no error", func() {
+			result, exist, err := reconciler.CheckSystemdStatus()
+			Expect(err).ToNot(HaveOccurred())
+			Expect(exist).To(BeFalse())
+			Expect(result).To(BeNil())
 		})
 	})
 })
