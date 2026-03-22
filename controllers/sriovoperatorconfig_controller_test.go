@@ -154,8 +154,8 @@ var _ = Describe("SriovOperatorConfig controller", Ordered, func() {
 					FeatureGates:          map[string]bool{},
 				}
 				err = k8sClient.Update(ctx, config)
-				Expect(err).NotTo(HaveOccurred())
-			}).Should(Succeed())
+				g.Expect(err).NotTo(HaveOccurred())
+			}, util.APITimeout, util.RetryInterval).Should(Succeed())
 
 		})
 

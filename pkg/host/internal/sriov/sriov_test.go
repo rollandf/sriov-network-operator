@@ -1074,8 +1074,11 @@ var _ = Describe("SRIOV", func() {
 
 		It("should apply devlink params after all interface configuration is complete", func() {
 			helpers.GinkgoConfigureFakeFS(&fakefilesystem.FS{
-				Dirs:  []string{"/sys/bus/pci/devices/0000:d8:00.0"},
+				Dirs:  []string{"/sys/bus/pci/devices/0000:d8:00.0", "/sys/bus/pci/devices/0000:d8:00.2"},
 				Files: map[string][]byte{"/sys/bus/pci/devices/0000:d8:00.0/sriov_numvfs": {}},
+				Symlinks: map[string]string{
+					"/sys/bus/pci/devices/0000:d8:00.2/physfn": "../../0000:d8:00.0",
+				},
 			})
 
 			dputilsLibMock.EXPECT().GetSriovVFcapacity("0000:d8:00.0").Return(1)
@@ -1088,7 +1091,7 @@ var _ = Describe("SRIOV", func() {
 			hostMock.EXPECT().AddPersistPFNameUdevRule("0000:d8:00.0", "enp216s0f0np0").Return(nil)
 			hostMock.EXPECT().EnableHwTcOffload("enp216s0f0np0").Return(nil)
 			hostMock.EXPECT().GetDevlinkDeviceParam("0000:d8:00.0", "flow_steering_mode").Return("smfs", nil)
-			dputilsLibMock.EXPECT().GetVFList("0000:d8:00.0").Return([]string{"0000:d8:00.2"}, nil).Times(2)
+			dputilsLibMock.EXPECT().GetVFList("0000:d8:00.0").Return([]string{"0000:d8:00.2"}, nil).AnyTimes()
 			pfLinkMock := netlinkMockPkg.NewMockLink(testCtrl)
 			netlinkLibMock.EXPECT().LinkByName("enp216s0f0np0").Return(pfLinkMock, nil).Times(2)
 			netlinkLibMock.EXPECT().IsLinkAdminStateUp(pfLinkMock).Return(false)
