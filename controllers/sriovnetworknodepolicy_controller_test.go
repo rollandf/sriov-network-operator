@@ -1256,6 +1256,59 @@ var _ = Describe("SriovNetworkNodePolicyReconciler", Ordered, func() {
 			Expect(dcList.Items).To(BeEmpty())
 		})
 
+		It("syncExtendedResourceDeviceClasses skips gracefully when DeviceClass CRD is not available", func() {
+			ctx = context.Background()
+			nsSaved = vars.Namespace
+			prefixSaved = vars.ResourcePrefix
+			vars.Namespace = testNamespace
+			vars.ResourcePrefix = "openshift.io"
+			DeferCleanup(func() {
+				vars.Namespace = nsSaved
+				vars.ResourcePrefix = prefixSaved
+			})
+			noDeviceClassScheme := runtime.NewScheme()
+			utilruntime.Must(sriovnetworkv1.AddToScheme(noDeviceClassScheme))
+			utilruntime.Must(sriovdrav1alpha1.AddToScheme(noDeviceClassScheme))
+			utilruntime.Must(corev1.AddToScheme(noDeviceClassScheme))
+			dc = &sriovnetworkv1.SriovOperatorConfig{
+				ObjectMeta: metav1.ObjectMeta{Name: consts.DefaultConfigName, Namespace: testNamespace},
+			}
+			cl := fake.NewClientBuilder().WithScheme(noDeviceClassScheme).WithObjects(dc).Build()
+			fg := featuregate.New()
+			fg.Init(map[string]bool{consts.DynamicResourceAllocationFeatureGate: true})
+			r = &SriovNetworkNodePolicyReconciler{Client: cl, Scheme: noDeviceClassScheme, FeatureGate: fg}
+			pl := &sriovnetworkv1.SriovNetworkNodePolicyList{
+				Items: []sriovnetworkv1.SriovNetworkNodePolicy{
+					{
+						ObjectMeta: metav1.ObjectMeta{Name: "p1", Namespace: testNamespace},
+						Spec:       sriovnetworkv1.SriovNetworkNodePolicySpec{ResourceName: "intel_nic"},
+					},
+				},
+			}
+			Expect(r.syncExtendedResourceDeviceClasses(ctx, dc, pl)).To(Succeed())
+		})
+
+		It("cleanupExtendedResourceDeviceClasses skips gracefully when DeviceClass CRD is not available", func() {
+			ctx = context.Background()
+			nsSaved = vars.Namespace
+			prefixSaved = vars.ResourcePrefix
+			vars.Namespace = testNamespace
+			vars.ResourcePrefix = "openshift.io"
+			DeferCleanup(func() {
+				vars.Namespace = nsSaved
+				vars.ResourcePrefix = prefixSaved
+			})
+			noDeviceClassScheme := runtime.NewScheme()
+			utilruntime.Must(sriovnetworkv1.AddToScheme(noDeviceClassScheme))
+			utilruntime.Must(sriovdrav1alpha1.AddToScheme(noDeviceClassScheme))
+			utilruntime.Must(corev1.AddToScheme(noDeviceClassScheme))
+			cl := fake.NewClientBuilder().WithScheme(noDeviceClassScheme).Build()
+			fg := featuregate.New()
+			fg.Init(map[string]bool{consts.DynamicResourceAllocationFeatureGate: true})
+			r = &SriovNetworkNodePolicyReconciler{Client: cl, Scheme: noDeviceClassScheme, FeatureGate: fg}
+			Expect(r.cleanupExtendedResourceDeviceClasses(ctx)).To(Succeed())
+		})
+
 		It("cleanupSriovResourcePoliciesAndDeviceAttributes deletes operator-created policies and attributes", func() {
 			policy := &sriovdrav1alpha1.SriovResourcePolicy{
 				ObjectMeta: metav1.ObjectMeta{

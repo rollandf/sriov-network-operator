@@ -46,6 +46,7 @@ import (
 	rbacv1 "k8s.io/api/rbac/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	uns "k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/labels"
@@ -354,8 +355,12 @@ func cleanupDRADriverObjs(ctx context.Context, client k8sclient.Client) error {
 	baseDC.SetGroupVersionKind(schema.GroupVersionKind{Group: "resource.k8s.io", Version: "v1", Kind: "DeviceClass"})
 	baseDC.SetName(draDriverBaseDeviceClassName)
 	if err := deleteIfNotFound(ctx, client, baseDC); err != nil {
-		logger.Error(err, "Failed to delete DRA base DeviceClass")
-		return err
+		if apimeta.IsNoMatchError(err) {
+			logger.V(1).Info("DeviceClass CRD not available, skipping base DeviceClass cleanup")
+		} else {
+			logger.Error(err, "Failed to delete DRA base DeviceClass")
+			return err
+		}
 	}
 
 	logger.Info("Cleaned up DRA driver DaemonSet, RBAC, ServiceAccount, and base DeviceClass")
@@ -410,8 +415,11 @@ func syncDsObject(ctx context.Context, client k8sclient.Client, scheme *runtime.
 			return err
 		}
 	case deviceClassResourceName:
-		// Cluster-scoped DeviceClass (e.g. basic sriovnetwork.k8snetworkplumbingwg.io from DRA driver bindata).
 		if err := apply.ApplyObject(ctx, client, obj); err != nil {
+			if apimeta.IsNoMatchError(err) {
+				logger.V(1).Info("DeviceClass CRD not available, skipping DeviceClass sync")
+				return nil
+			}
 			logger.Error(err, "Fail to sync", "Kind", kind)
 			return err
 		}
