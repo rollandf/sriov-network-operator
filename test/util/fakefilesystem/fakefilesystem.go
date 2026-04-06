@@ -59,7 +59,11 @@ func (f *FS) Use() (string, func(), error) {
 	}
 
 	for link, target := range f.Symlinks {
-		err = os.Symlink(target, path.Join(rootDir, link))
+		linkPath := path.Join(rootDir, link)
+		if err := os.MkdirAll(path.Dir(linkPath), 0o755); err != nil {
+			return "", nil, fmt.Errorf("error creating fake symlink parent dir: %w", err)
+		}
+		err = os.Symlink(target, linkPath)
 		if err != nil {
 			return "", nil, fmt.Errorf("error creating fake symlink: %w", err)
 		}
