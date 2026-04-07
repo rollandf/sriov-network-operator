@@ -30,6 +30,7 @@ import (
 	resourceapi "k8s.io/api/resource/v1"
 	"k8s.io/apimachinery/pkg/api/equality"
 	"k8s.io/apimachinery/pkg/api/errors"
+	apimeta "k8s.io/apimachinery/pkg/api/meta"
 	metav1 "k8s.io/apimachinery/pkg/apis/meta/v1"
 	"k8s.io/apimachinery/pkg/apis/meta/v1/unstructured"
 	"k8s.io/apimachinery/pkg/runtime"
@@ -1107,6 +1108,10 @@ func (r *SriovNetworkNodePolicyReconciler) syncExtendedResourceDeviceClasses(ctx
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(gvk)
 	if err := r.List(ctx, list, client.MatchingLabels{deviceClassGeneratedByLabel: deviceClassOperatorLabelVal}); err != nil {
+		if apimeta.IsNoMatchError(err) {
+			logger.V(1).Info("DeviceClass CRD not available, skipping extended resource DeviceClass sync")
+			return nil
+		}
 		return err
 	}
 	for resourceName := range desiredResourceNames {
@@ -1172,6 +1177,10 @@ func (r *SriovNetworkNodePolicyReconciler) cleanupExtendedResourceDeviceClasses(
 	list := &unstructured.UnstructuredList{}
 	list.SetGroupVersionKind(gvk)
 	if err := r.List(ctx, list, client.MatchingLabels{deviceClassGeneratedByLabel: deviceClassOperatorLabelVal}); err != nil {
+		if apimeta.IsNoMatchError(err) {
+			logger.V(1).Info("DeviceClass CRD not available, nothing to clean up")
+			return nil
+		}
 		return err
 	}
 	for i := range list.Items {
