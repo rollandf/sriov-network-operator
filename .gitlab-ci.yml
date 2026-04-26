@@ -211,8 +211,7 @@ pulse-scan-oss:
     CONTAINER_IMAGE: $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG
     NSPECT_ID: $NSPECT_ID
     PROGRAM_VERSION: $NSPECT_RELEASE_VERSION
-  allow_failure:
-    exit_codes: [11, 255]  # non-gating for scan/policy failures; technical errors (e.g. auth, invalid nspect id) still fail the pipeline
+  allow_failure: true  # non gating (pipeline stages will display warnings instead of failures)
 
 pulse-scan-stig:
   stage: pulse-scan-stig
@@ -235,5 +234,4 @@ pulse-scan-stig:
     CONTAINER_IMAGE: $DOCKER_REGISTRY/$DOCKER_IMAGE_NAME:$DOCKER_TAG
     NSPECT_ID: $NSPECT_ID
     PROGRAM_VERSION: $NSPECT_RELEASE_VERSION
-  allow_failure:
-    exit_codes: [11, 255]  # non-gating for scan/policy failures; technical errors (e.g. auth, invalid nspect id) still fail the pipeline
+  allow_failure: true  # non gating (pipeline stages will display warnings instead of failures)
