@@ -148,11 +148,13 @@ var _ = Describe("SriovOperatorConfig controller", Ordered, func() {
 				g.Expect(config.Finalizers).ToNot(BeEmpty())
 
 				config.Spec = sriovnetworkv1.SriovOperatorConfigSpec{
-					FeatureGates: map[string]bool{},
+					EnableInjector:        true,
+					EnableOperatorWebhook: true,
+					LogLevel:              2,
+					FeatureGates:          map[string]bool{},
 				}
 				err = k8sClient.Update(ctx, config)
 				g.Expect(err).NotTo(HaveOccurred())
-				Expect(err).NotTo(HaveOccurred())
 			}, util.APITimeout, util.RetryInterval).Should(Succeed())
 
 		})
@@ -281,7 +283,9 @@ var _ = Describe("SriovOperatorConfig controller", Ordered, func() {
 		It("should delete the webhooks when SriovOperatorConfig/default is deleted", func() {
 			DeferCleanup(k8sClient.Create, context.Background(), makeDefaultSriovOpConfig())
 
-			err := k8sClient.Delete(context.Background(), &sriovnetworkv1.SriovOperatorConfig{})
+			err := k8sClient.Delete(context.Background(), &sriovnetworkv1.SriovOperatorConfig{
+				ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace, Name: "default"},
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			assertResourceDoesNotExist(
@@ -310,7 +314,9 @@ var _ = Describe("SriovOperatorConfig controller", Ordered, func() {
 				return config.Finalizers
 			}, util.APITimeout, util.RetryInterval).Should(Equal([]string{sriovnetworkv1.OPERATORCONFIGFINALIZERNAME}))
 
-			err := k8sClient.Delete(context.Background(), &sriovnetworkv1.SriovOperatorConfig{})
+			err := k8sClient.Delete(context.Background(), &sriovnetworkv1.SriovOperatorConfig{
+				ObjectMeta: metav1.ObjectMeta{Namespace: testNamespace, Name: "default"},
+			})
 			Expect(err).NotTo(HaveOccurred())
 
 			// verify that finalizer has been removed
@@ -572,7 +578,11 @@ var _ = Describe("SriovOperatorConfig controller", Ordered, func() {
 					Expect(err).ToNot(HaveOccurred())
 
 					assertResourceExists(
-						schema.GroupVersionKind{},
+						schema.GroupVersionKind{
+							Group:   "monitoring.coreos.com",
+							Kind:    "ServiceMonitor",
+							Version: "v1",
+						},
 						client.ObjectKey{Namespace: testNamespace, Name: "sriov-network-metrics-exporter"})
 
 					assertResourceExists(
