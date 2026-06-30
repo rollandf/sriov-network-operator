@@ -18,6 +18,7 @@ package mellanox
 
 import (
 	"fmt"
+	"os"
 
 	"sigs.k8s.io/controller-runtime/pkg/log"
 
@@ -44,6 +45,26 @@ var mellanoxNicsSpec map[string]sriovnetworkv1.Interface
 // Initialize our plugin and set up initial values
 func NewMellanoxPlugin(helpers helper.HostHelpersInterface) (plugin.VendorPlugin, error) {
 	mellanoxNicsStatus = map[string]map[string]sriovnetworkv1.InterfaceExt{}
+
+	// In DaemonSet mode the generic plugin chroots the process into /host before
+	// calling ConfigSriovInterfaces, making container binaries and their shared
+	// libraries inaccessible when the VF hook fires.  Open the container root now
+	// (before any chroot) so that the hook can temporarily escape back to the
+	// container filesystem context when it needs to run doca_mgmt_data_direct.
+	var containerRoot *os.File
+	if !vars.UsingSystemdMode {
+		var err error
+		containerRoot, err = os.Open("/")
+		if err != nil {
+			log.Log.Error(err, "MellanoxPlugin: cannot save container root fd; DDI hook will skip")
+		}
+	}
+
+	helpers.SetVFConfigHook(&MellanoxVFHook{
+		kernelHelper:  helpers,
+		utilsHelper:   helpers,
+		containerRoot: containerRoot,
+	})
 
 	return &MellanoxPlugin{
 		PluginName: PluginName,

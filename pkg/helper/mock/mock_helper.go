@@ -215,6 +215,18 @@ func (mr *MockHostHelpersInterfaceMockRecorder) ConfigSriovDevicesVirtual(storeM
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigSriovDevicesVirtual", reflect.TypeOf((*MockHostHelpersInterface)(nil).ConfigSriovDevicesVirtual), storeManager, interfaces, ifaceStatuses)
 }
 
+// SetVFConfigHook mocks base method.
+func (m *MockHostHelpersInterface) SetVFConfigHook(hook types.VFConfigHook) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVFConfigHook", hook)
+}
+
+// SetVFConfigHook indicates an expected call of SetVFConfigHook.
+func (mr *MockHostHelpersInterfaceMockRecorder) SetVFConfigHook(hook any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVFConfigHook", reflect.TypeOf((*MockHostHelpersInterface)(nil).SetVFConfigHook), hook)
+}
+
 // ConfigSriovInterfaces mocks base method.
 func (m *MockHostHelpersInterface) ConfigSriovInterfaces(storeManager store.ManagerInterface, interfaces []v1.Interface, ifaceStatuses []v1.InterfaceExt, skipVFConfiguration bool) error {
 	m.ctrl.T.Helper()

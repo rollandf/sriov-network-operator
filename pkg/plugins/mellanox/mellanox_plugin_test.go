@@ -50,6 +50,7 @@ var _ = Describe("SRIOV", Ordered, func() {
 	BeforeEach(func() {
 		testCtrl = gomock.NewController(GinkgoT())
 		h = mock_helper.NewMockHostHelpersInterface(testCtrl)
+		h.EXPECT().SetVFConfigHook(gomock.Any())
 		m, err = NewMellanoxPlugin(h)
 		Expect(err).ToNot(HaveOccurred())
 

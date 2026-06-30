@@ -67,6 +67,7 @@ type sriov struct {
 	sriovnetLib      sriovnetPkg.SriovnetLib
 	ghwLib           ghwPkg.GHWLib
 	bridgeHelper     types.BridgeInterface
+	vfConfigHook     types.VFConfigHook
 }
 
 func New(utilsHelper utils.CmdInterface,
@@ -92,6 +93,10 @@ func New(utilsHelper utils.CmdInterface,
 		ghwLib:           ghwLib,
 		bridgeHelper:     bridgeHelper,
 	}
+}
+
+func (s *sriov) SetVFConfigHook(hook types.VFConfigHook) {
+	s.vfConfigHook = hook
 }
 
 func (s *sriov) SetSriovNumVfs(pciAddr string, numVfs int) error {
@@ -702,6 +707,11 @@ func (s *sriov) configSriovVFDevices(iface *sriovnetworkv1.Interface) error {
 
 			if err = s.kernelHelper.UnbindDriverIfNeeded(addr, group.IsRdma); err != nil {
 				return err
+			}
+			if s.vfConfigHook != nil {
+				if err := s.vfConfigHook.OnVFUnbound(iface, addr, group); err != nil {
+					return err
+				}
 			}
 			// we set eswitch mode before this point and if the desired mode (and current at this point)
 			// is legacy, then VDPA device is already automatically disappeared,
