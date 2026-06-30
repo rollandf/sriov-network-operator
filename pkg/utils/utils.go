@@ -41,6 +41,9 @@ const (
 type CmdInterface interface {
 	Chroot(string) (func() error, error)
 	RunCommand(string, ...string) (string, string, error)
+	// RunCommandWithEnv runs a command with additional environment variables appended to the
+	// current process environment.  env entries take the form "KEY=VALUE".
+	RunCommandWithEnv(env []string, command string, args ...string) (string, string, error)
 	HTTPGetFetchData(string) (string, error)
 }
 
@@ -106,10 +109,19 @@ func (u *utilsHelper) HTTPGetFetchData(url string) (string, error) {
 
 // RunCommand runs a command
 func (u *utilsHelper) RunCommand(command string, args ...string) (string, string, error) {
+	return u.RunCommandWithEnv(nil, command, args...)
+}
+
+// RunCommandWithEnv runs a command with extra environment variables appended to
+// the current process environment.  env entries take the form "KEY=VALUE".
+func (u *utilsHelper) RunCommandWithEnv(env []string, command string, args ...string) (string, string, error) {
 	log.Log.Info("RunCommand()", "command", command, "args", args)
 	var stdout, stderr bytes.Buffer
 
 	cmd := exec.Command(command, args...)
+	if len(env) > 0 {
+		cmd.Env = append(os.Environ(), env...)
+	}
 	cmd.Stdout = &stdout
 	cmd.Stderr = &stderr
 

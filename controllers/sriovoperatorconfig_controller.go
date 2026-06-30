@@ -308,6 +308,7 @@ func (r *SriovOperatorConfigReconciler) syncConfigDaemonSet(ctx context.Context,
 	data.Data["ClusterType"] = vars.ClusterType
 	data.Data["DevMode"] = os.Getenv("DEV_MODE")
 	data.Data["UseExternalDrainer"] = vars.UseExternalDrainer
+	data.Data["VFConfigHookEnabled"] = os.Getenv("VF_CONFIG_HOOK_ENABLED")
 	data.Data["ImagePullSecrets"] = GetImagePullSecrets()
 	if dc.Spec.ConfigurationMode == sriovnetworkv1.SystemdConfigurationMode {
 		data.Data["UsedSystemdMode"] = true

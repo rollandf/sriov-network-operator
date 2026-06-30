@@ -25,7 +25,22 @@ WORKDIR /go/src/github.com/k8snetworkplumbingwg/sriov-network-operator
 COPY . .
 RUN make _build-sriov-network-config-daemon BIN_PATH=build/_output/cmd
 
-FROM ${BASE_IMAGE_DOCA_FULL_RT_HOST:-nvcr.io/nvidia/doca/doca:3.2.1-full-rt-host}
+FROM ${BASE_IMAGE_DOCA_FULL_RT_HOST:-nvcr.io/nvstaging/doca/doca:full-rt-3.5.0036-host-dev}
+
+# Install DOCA dev packages while the internal NVIDIA apt sources are still available.
+# doca-samples provides the mgmt_data_direct source tree;
+# libdoca-sdk-mgmt-dev and libdoca-sdk-argp-dev provide the headers meson needs.
+RUN apt-get update -o Acquire::AllowInsecureRepositories=true && \
+    apt-get install -y --allow-unauthenticated \
+        pkg-config meson ninja-build gcc \
+        doca-samples libdoca-sdk-mgmt-dev libdoca-sdk-argp-dev && \
+    apt-get clean && rm -rf /var/lib/apt/lists/*
+
+# Build doca_mgmt_data_direct from DOCA samples.
+RUN meson setup /opt/mellanox/doca/samples/doca_mgmt/mgmt_data_direct /tmp/ddi-build && \
+    ninja -C /tmp/ddi-build && \
+    cp /tmp/ddi-build/doca_mgmt_data_direct /usr/bin/ && \
+    rm -rf /tmp/ddi-build
 
 # Drop NVIDIA-internal apt sources baked into staging DOCA base images so the
 # build works from public CI (GitHub Actions). mstflint then resolves from Ubuntu.

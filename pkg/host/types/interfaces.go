@@ -168,6 +168,17 @@ type SriovInterface interface {
 	// ConfigSriovDevicesVirtual configure virtual functions for virtual environments with the desired configuration
 	ConfigSriovDevicesVirtual(storeManager store.ManagerInterface, interfaces []sriovnetworkv1.Interface,
 		ifaceStatuses []sriovnetworkv1.InterfaceExt) error
+	// SetVFConfigHook registers an optional per-VF hook called after a VF is unbound, before rebinding.
+	// Vendor plugins use this to inject vendor-specific per-VF logic; the default (nil) is a no-op.
+	SetVFConfigHook(hook VFConfigHook)
+}
+
+// VFConfigHook is an optional per-VF hook called after a VF is unbound, before rebinding.
+// Implementations are registered by vendor plugins via SetVFConfigHook; nil means no-op.
+type VFConfigHook interface {
+	// OnVFUnbound is called after a VF has been unbound from its driver.
+	// iface is the PF interface spec, vfPciAddr is the VF PCI address, group is the matched VfGroup.
+	OnVFUnbound(iface *sriovnetworkv1.Interface, vfPciAddr string, group *sriovnetworkv1.VfGroup) error
 }
 
 type UdevInterface interface {

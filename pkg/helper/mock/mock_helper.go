@@ -215,6 +215,18 @@ func (mr *MockHostHelpersInterfaceMockRecorder) ConfigSriovDevicesVirtual(storeM
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ConfigSriovDevicesVirtual", reflect.TypeOf((*MockHostHelpersInterface)(nil).ConfigSriovDevicesVirtual), storeManager, interfaces, ifaceStatuses)
 }
 
+// SetVFConfigHook mocks base method.
+func (m *MockHostHelpersInterface) SetVFConfigHook(hook types.VFConfigHook) {
+	m.ctrl.T.Helper()
+	m.ctrl.Call(m, "SetVFConfigHook", hook)
+}
+
+// SetVFConfigHook indicates an expected call of SetVFConfigHook.
+func (mr *MockHostHelpersInterfaceMockRecorder) SetVFConfigHook(hook any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "SetVFConfigHook", reflect.TypeOf((*MockHostHelpersInterface)(nil).SetVFConfigHook), hook)
+}
+
 // ConfigSriovInterfaces mocks base method.
 func (m *MockHostHelpersInterface) ConfigSriovInterfaces(storeManager store.ManagerInterface, interfaces []v1.Interface, ifaceStatuses []v1.InterfaceExt, skipVFConfiguration bool) error {
 	m.ctrl.T.Helper()
@@ -1153,6 +1165,27 @@ func (mr *MockHostHelpersInterfaceMockRecorder) RunCommand(arg0 any, arg1 ...any
 	mr.mock.ctrl.T.Helper()
 	varargs := append([]any{arg0}, arg1...)
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunCommand", reflect.TypeOf((*MockHostHelpersInterface)(nil).RunCommand), varargs...)
+}
+
+// RunCommandWithEnv mocks base method.
+func (m *MockHostHelpersInterface) RunCommandWithEnv(arg0 []string, arg1 string, arg2 ...string) (string, string, error) {
+	m.ctrl.T.Helper()
+	varargs := []any{arg0, arg1}
+	for _, a := range arg2 {
+		varargs = append(varargs, a)
+	}
+	ret := m.ctrl.Call(m, "RunCommandWithEnv", varargs...)
+	ret0, _ := ret[0].(string)
+	ret1, _ := ret[1].(string)
+	ret2, _ := ret[2].(error)
+	return ret0, ret1, ret2
+}
+
+// RunCommandWithEnv indicates an expected call of RunCommandWithEnv.
+func (mr *MockHostHelpersInterfaceMockRecorder) RunCommandWithEnv(arg0 any, arg1 any, arg2 ...any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	varargs := append([]any{arg0, arg1}, arg2...)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RunCommandWithEnv", reflect.TypeOf((*MockHostHelpersInterface)(nil).RunCommandWithEnv), varargs...)
 }
 
 // SaveLastPfAppliedStatus mocks base method.
