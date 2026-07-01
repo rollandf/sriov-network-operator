@@ -90,12 +90,12 @@ spec:
         {{- if .OVSCNIImage }}
         - name: ovs-cni
           image: {{.OVSCNIImage}}
-          command: ["/bin/sh","-c"]
           args:
-            - >
-              cp /ovs /host/opt/cni/bin/ovs &&
-              cp /ovs-mirror-producer /host/opt/cni/bin/ovs-mirror-producer &&
-              cp /ovs-mirror-consumer /host/opt/cni/bin/ovs-mirror-consumer
+            - --cni-bin-dir=/host/opt/cni/bin
+            - --ovs-bin-file=/ovs
+            - --ovs-mirror-producer-bin-file=/ovs-mirror-producer
+            - --ovs-mirror-consumer-bin-file=/ovs-mirror-consumer
+            - --no-sleep
           securityContext:
             privileged: true
           resources:
@@ -141,6 +141,8 @@ spec:
               mkdir -p /host/var/lib/sriov/
               cp /usr/bin/sriov-network-config-daemon /host/var/lib/sriov/sriov-network-config-daemon
               chcon -t bin_t /host/var/lib/sriov/sriov-network-config-daemon || true # Allow systemd to run the file, use pipe true to not failed if the system doesn't have selinux or apparmor enabled
+              cp /bindata/scripts/kargs.sh /host/var/lib/sriov/kargs.sh
+              chcon -t bin_t /host/var/lib/sriov/kargs.sh | true # Allow systemd to run the file, use pipe true to not failed if the system doesn't have selinux or apparmor enabled
           securityContext:
             privileged: true
           resources:

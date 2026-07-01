@@ -210,6 +210,7 @@ var _ = Describe("Daemon Controller", Ordered, func() {
 		// general
 		hostHelper.EXPECT().Chroot(gomock.Any()).Return(func() error { return nil }, nil).AnyTimes()
 		hostHelper.EXPECT().RunCommand("/bin/sh", gomock.Any(), gomock.Any(), gomock.Any()).Return("", "", nil).AnyTimes()
+		hostHelper.EXPECT().RunCommand("/bin/bash", gomock.Any(), gomock.Any(), gomock.Any()).Return("", "", nil).AnyTimes()
 
 		discoverSriovReturn = newSriovDiscoverReturn()
 
@@ -229,7 +230,7 @@ var _ = Describe("Daemon Controller", Ordered, func() {
 		// k8s plugin for k8s cluster type
 		if vars.ClusterType == constants.ClusterTypeKubernetes {
 			hostHelper.EXPECT().ReadServiceManifestFile(gomock.Any()).Return(&hostTypes.Service{Name: "test"}, nil).AnyTimes()
-			hostHelper.EXPECT().ReadServiceInjectionManifestFile(gomock.Any()).Return(&hostTypes.Service{Name: "test"}, nil).AnyTimes()
+			hostHelper.EXPECT().ReadServiceInjectionManifestFile(gomock.Any(), gomock.Any()).Return(&hostTypes.Service{Name: "test"}, nil).AnyTimes()
 		}
 
 		platformMock.EXPECT().Init().Return(nil)

@@ -256,17 +256,17 @@ func (mr *MockHostManagerInterfaceMockRecorder) DeleteVDPADevice(pciAddr any) *g
 }
 
 // DetachInterfaceFromManagedBridge mocks base method.
-func (m *MockHostManagerInterface) DetachInterfaceFromManagedBridge(pciAddr string) error {
+func (m *MockHostManagerInterface) DetachInterfaceFromManagedBridge(pciAddr, pfName string, numVfs int) error {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "DetachInterfaceFromManagedBridge", pciAddr)
+	ret := m.ctrl.Call(m, "DetachInterfaceFromManagedBridge", pciAddr, pfName, numVfs)
 	ret0, _ := ret[0].(error)
 	return ret0
 }
 
 // DetachInterfaceFromManagedBridge indicates an expected call of DetachInterfaceFromManagedBridge.
-func (mr *MockHostManagerInterfaceMockRecorder) DetachInterfaceFromManagedBridge(pciAddr any) *gomock.Call {
+func (mr *MockHostManagerInterfaceMockRecorder) DetachInterfaceFromManagedBridge(pciAddr, pfName, numVfs any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachInterfaceFromManagedBridge", reflect.TypeOf((*MockHostManagerInterface)(nil).DetachInterfaceFromManagedBridge), pciAddr)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "DetachInterfaceFromManagedBridge", reflect.TypeOf((*MockHostManagerInterface)(nil).DetachInterfaceFromManagedBridge), pciAddr, pfName, numVfs)
 }
 
 // DiscoverBridges mocks base method.
@@ -414,6 +414,21 @@ func (m *MockHostManagerInterface) GetDevlinkDeviceParam(pciAddr, paramName stri
 func (mr *MockHostManagerInterfaceMockRecorder) GetDevlinkDeviceParam(pciAddr, paramName any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevlinkDeviceParam", reflect.TypeOf((*MockHostManagerInterface)(nil).GetDevlinkDeviceParam), pciAddr, paramName)
+}
+
+// GetDevlinkDeviceParams mocks base method.
+func (m *MockHostManagerInterface) GetDevlinkDeviceParams(pciAddr string) ([]v1.DevlinkParam, error) {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "GetDevlinkDeviceParams", pciAddr)
+	ret0, _ := ret[0].([]v1.DevlinkParam)
+	ret1, _ := ret[1].(error)
+	return ret0, ret1
+}
+
+// GetDevlinkDeviceParams indicates an expected call of GetDevlinkDeviceParams.
+func (mr *MockHostManagerInterfaceMockRecorder) GetDevlinkDeviceParams(pciAddr any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "GetDevlinkDeviceParams", reflect.TypeOf((*MockHostManagerInterface)(nil).GetDevlinkDeviceParams), pciAddr)
 }
 
 // GetDriverByBusAndDevice mocks base method.
@@ -783,18 +798,18 @@ func (mr *MockHostManagerInterfaceMockRecorder) ReadService(servicePath any) *go
 }
 
 // ReadServiceInjectionManifestFile mocks base method.
-func (m *MockHostManagerInterface) ReadServiceInjectionManifestFile(path string) (*types.Service, error) {
+func (m *MockHostManagerInterface) ReadServiceInjectionManifestFile(path string, ovsConfig map[string]string) (*types.Service, error) {
 	m.ctrl.T.Helper()
-	ret := m.ctrl.Call(m, "ReadServiceInjectionManifestFile", path)
+	ret := m.ctrl.Call(m, "ReadServiceInjectionManifestFile", path, ovsConfig)
 	ret0, _ := ret[0].(*types.Service)
 	ret1, _ := ret[1].(error)
 	return ret0, ret1
 }
 
 // ReadServiceInjectionManifestFile indicates an expected call of ReadServiceInjectionManifestFile.
-func (mr *MockHostManagerInterfaceMockRecorder) ReadServiceInjectionManifestFile(path any) *gomock.Call {
+func (mr *MockHostManagerInterfaceMockRecorder) ReadServiceInjectionManifestFile(path, ovsConfig any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
-	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadServiceInjectionManifestFile", reflect.TypeOf((*MockHostManagerInterface)(nil).ReadServiceInjectionManifestFile), path)
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReadServiceInjectionManifestFile", reflect.TypeOf((*MockHostManagerInterface)(nil).ReadServiceInjectionManifestFile), path, ovsConfig)
 }
 
 // ReadServiceManifestFile mocks base method.
@@ -854,6 +869,20 @@ func (m *MockHostManagerInterface) RebindVfToDefaultDriver(pciAddr string) error
 func (mr *MockHostManagerInterfaceMockRecorder) RebindVfToDefaultDriver(pciAddr any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RebindVfToDefaultDriver", reflect.TypeOf((*MockHostManagerInterface)(nil).RebindVfToDefaultDriver), pciAddr)
+}
+
+// ReloadServiceDaemon mocks base method.
+func (m *MockHostManagerInterface) ReloadServiceDaemon() error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "ReloadServiceDaemon")
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// ReloadServiceDaemon indicates an expected call of ReloadServiceDaemon.
+func (mr *MockHostManagerInterfaceMockRecorder) ReloadServiceDaemon() *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ReloadServiceDaemon", reflect.TypeOf((*MockHostManagerInterface)(nil).ReloadServiceDaemon))
 }
 
 // RemoveDisableNMUdevRule mocks base method.
@@ -924,6 +953,20 @@ func (m *MockHostManagerInterface) ResetSriovDevice(ifaceStatus v1.InterfaceExt)
 func (mr *MockHostManagerInterfaceMockRecorder) ResetSriovDevice(ifaceStatus any) *gomock.Call {
 	mr.mock.ctrl.T.Helper()
 	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "ResetSriovDevice", reflect.TypeOf((*MockHostManagerInterface)(nil).ResetSriovDevice), ifaceStatus)
+}
+
+// RestartService mocks base method.
+func (m *MockHostManagerInterface) RestartService(service *types.Service) error {
+	m.ctrl.T.Helper()
+	ret := m.ctrl.Call(m, "RestartService", service)
+	ret0, _ := ret[0].(error)
+	return ret0
+}
+
+// RestartService indicates an expected call of RestartService.
+func (mr *MockHostManagerInterfaceMockRecorder) RestartService(service any) *gomock.Call {
+	mr.mock.ctrl.T.Helper()
+	return mr.mock.ctrl.RecordCallWithMethodType(mr.mock, "RestartService", reflect.TypeOf((*MockHostManagerInterface)(nil).RestartService), service)
 }
 
 // SetDevlinkDeviceParam mocks base method.
