@@ -205,6 +205,8 @@ spec:
             mountPath: /host
           - name: tmp
             mountPath: /tmp
+          - name: mft-state
+            mountPath: /var/lib/mft
         lifecycle:
           preStop:
             exec:
@@ -221,4 +223,6 @@ spec:
           path: /etc/os-release
           type: File
       - name: tmp
+        emptyDir: {}
+      - name: mft-state
         emptyDir: {}
