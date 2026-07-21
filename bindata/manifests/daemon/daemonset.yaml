@@ -188,6 +188,8 @@ spec:
             value: "{{.ClusterType}}"
           - name: DEV_MODE
             value: "{{.DevMode}}"
+          - name: VF_CONFIG_HOOK_ENABLED
+            value: "{{.VFConfigHookEnabled}}"
           {{- if .UseExternalDrainer }}
           - name: USE_EXTERNAL_DRAINER
             value: "{{.UseExternalDrainer}}"
