@@ -147,6 +147,16 @@ func ddiResult(stdout, stderr string, err error, vfPciAddr string) error {
 			"vf", vfPciAddr)
 		return nil
 	}
+	// The firmware rejected the DDI capability command (e.g. fwctl sysfs entry
+	// exists but the NIC firmware does not implement DDI at this firmware version
+	// or configuration).  Treat as a soft-skip: the VF can still be configured
+	// without DDI rather than aborting the entire PF configuration.
+	if strings.Contains(combined, "Failed to set data direct") ||
+		strings.Contains(combined, "Failed to set HCA capabilities") {
+		log.Log.Info("MellanoxVFHook: firmware rejected DDI capability, skipping",
+			"vf", vfPciAddr, "output", combined)
+		return nil
+	}
 	// A dynamic-linker error means the staged libraries are absent or
 	// incomplete.  Treat this as a soft-skip so that a staging failure on one
 	// boot does not abort VF configuration for the whole PF.
@@ -161,8 +171,12 @@ func ddiResult(stdout, stderr string, err error, vfPciAddr string) error {
 	// soft-skip rather than a hard error to avoid infinite reconcile loops.
 	var exitErr *exec.ExitError
 	if errors.As(err, &exitErr) && combined == "" {
+		exitCode := -1
+		if exitErr.ProcessState != nil {
+			exitCode = exitErr.ExitCode()
+		}
 		log.Log.Info("MellanoxVFHook: doca_mgmt_data_direct exited non-zero with no output, skipping DDI",
-			"vf", vfPciAddr, "exitCode", exitErr.ExitCode())
+			"vf", vfPciAddr, "exitCode", exitCode)
 		return nil
 	}
 	return fmt.Errorf("MellanoxVFHook: doca_mgmt_data_direct set failed for %s: %w\n%s",
