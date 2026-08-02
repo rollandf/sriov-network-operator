@@ -159,10 +159,32 @@ func validateSriovNetworkNodePolicy(cr *sriovnetworkv1.SriovNetworkNodePolicy, o
 	return admit, warnings, nil
 }
 
+// resourceNameMaxLen is the maximum length of a resource name, matching the
+// Kubernetes DNS label limit (https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names).
+const resourceNameMaxLen = 63
+
+// resourceNameRegexp allows alphanumeric characters and underscores in any
+// position, plus hyphens in non-boundary positions (no leading/trailing hyphens).
+var resourceNameRegexp = regexp.MustCompile(`^[a-zA-Z0-9_]([a-zA-Z0-9_-]*[a-zA-Z0-9_])?$`)
+
+func validateResourceName(name string) error {
+	if name == "" {
+		return fmt.Errorf("resource name must not be empty")
+	}
+	if len(name) > resourceNameMaxLen {
+		return fmt.Errorf("resource name %q must be no more than %d characters", name, resourceNameMaxLen)
+	}
+	if !resourceNameRegexp.MatchString(name) {
+		return fmt.Errorf("resource name %q is invalid: must consist of alphanumeric characters, underscores or hyphens, "+
+			"and must start and end with an alphanumeric character or underscore "+
+			"(e.g. 'my_resource', 'net-device-1'), see https://kubernetes.io/docs/concepts/overview/working-with-objects/names/#names", name)
+	}
+	return nil
+}
+
 func staticValidateSriovNetworkNodePolicy(cr *sriovnetworkv1.SriovNetworkNodePolicy) (bool, error) {
-	var validString = regexp.MustCompile(`^[a-zA-Z0-9_]+$`)
-	if !validString.MatchString(cr.Spec.ResourceName) {
-		return false, fmt.Errorf("resource name \"%s\" contains invalid characters, the accepted syntax of the regular expressions is: \"^[a-zA-Z0-9_]+$\"", cr.Spec.ResourceName)
+	if err := validateResourceName(cr.Spec.ResourceName); err != nil {
+		return false, err
 	}
 
 	if cr.Spec.NicSelector.Vendor == "" && cr.Spec.NicSelector.DeviceID == "" && len(cr.Spec.NicSelector.PfNames) == 0 && len(cr.Spec.NicSelector.RootDevices) == 0 && cr.Spec.NicSelector.NetFilter == "" {
